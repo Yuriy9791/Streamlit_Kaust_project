@@ -1,1 +1,8 @@
-
+streamlit
+plotly
+pandas
+numpy
+boto3
+botocore
+requests
+lasio
