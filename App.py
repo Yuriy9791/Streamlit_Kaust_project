@@ -44,13 +44,23 @@ geo_times = st.sidebar.multiselect("Geologic Time", options=table_data['Geologic
 wells_map['intersection_time'] = wells_map['Age'].apply(lambda x: 0 if set(x.split('_')).intersection(set(geo_times))==set() else 1)
 filtered_wells = wells_map[wells_map['intersection_time'] != 0]
 
-# Map Visualization
-fig_map = px.scatter_mapbox(filtered_wells, lat="lat", lon="lon", hover_name="Name", zoom=4, height=600, mapbox_style="satellite")
-st.plotly_chart(fig_map, use_container_width=True)
+# Map Visualization with box-select functionality
+fig_map = px.scatter_mapbox(filtered_wells, lat="lat", lon="lon", hover_name="Name",
+                            zoom=4, height=600, mapbox_style="satellite")
+fig_map.update_layout(dragmode='select')
+selected_points = st.plotly_chart(fig_map, use_container_width=True)
 
-# Selecting wells from map
+# Capturing selection from the map
+selected_wells = []
+selection = selected_points.selected_data if selected_points else None
+
+if selection:
+    points = selection['points']
+    selected_wells = [point['hovertext'] for point in points]
+
+# Display selected wells
 st.subheader("Selected Wells")
-selected_wells = st.multiselect("Select wells:", filtered_wells['Name'].tolist())
+selected_wells = st.multiselect("Selected wells:", filtered_wells['Name'].tolist(), default=selected_wells)
 
 if selected_wells:
     selected_data = curves_data[curves_data['Name'].isin(selected_wells)]
@@ -64,7 +74,8 @@ if selected_wells:
         # Load curve data from AWS
         bucket_for_visualization = "transformed-for-visualization-data-1"
         file_prefix = 'csv/' + type_curve
-        keys_log = [obj['Key'] for obj in client.list_objects_v2(Bucket=bucket_for_visualization, Prefix=file_prefix)['Contents']]
+        response = client.list_objects_v2(Bucket=bucket_for_visualization, Prefix=file_prefix)
+        keys_log = [obj['Key'] for obj in response.get('Contents', [])]
         path_file = next((key for key in keys_log if type_curve in key), None)
 
         if path_file:
