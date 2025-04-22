@@ -1,4 +1,5 @@
 streamlit
+streamlit-plotly-events
 plotly
 pandas
 numpy
